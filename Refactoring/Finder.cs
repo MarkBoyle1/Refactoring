@@ -1,67 +1,75 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Refactoring
 {
     public class Finder
     {
-        private readonly List<Person> _people;
+        private List<Person> _people;
 
         public Finder(List<Person> people)
         {
             _people = people;
         }
 
-        public Comparison Find(AgeGap ft)
+        public Comparison Find(AgeGap ageGapComparison)
         {
-            var listOfComparisons = new List<Comparison>();
+            _people = _people.OrderBy(person => person.BirthDate).ToList();
 
-            for(var i = 0; i < _people.Count - 1; i++)
+            if (_people.Count < 2)
             {
-                for(var j = i + 1; j < _people.Count; j++)
+                return GetZeroGapComparison();
+            }
+            
+            return ageGapComparison == AgeGap.LargestAgeGap ? GetLargestGapComparison() : GetSmallestGapComparison();
+        }
+        
+        private Comparison GetZeroGapComparison()
+        {
+            return new Comparison()
+            {
+                Person1 = null,
+                Person2 = null
+            };
+        }
+
+        private Comparison GetLargestGapComparison()
+        {
+           return new Comparison()
+            {
+                Person1 = _people[0],
+                Person2 = _people[_people.Count - 1],
+                AgeGap = _people[0].BirthDate - _people[_people.Count - 1].BirthDate
+            };
+        }
+
+        private Comparison GetSmallestGapComparison()
+        {
+            Person smallestGapPerson1 = _people[0];
+            Person smallestGapPerson2 = _people[1];
+            TimeSpan smallestGap = _people[1].BirthDate - _people[0].BirthDate;
+            
+            //Iterates through people list to find the smallest gap.
+            for (int i = 2; i < _people.Count; i++)
+            {
+                Person p1 = _people[i - 1];
+                Person p2 = _people[i];
+                
+                if (p2.BirthDate - p1.BirthDate < smallestGap)
                 {
-                    var newComparison = new Comparison();
-                    if(_people[i].BirthDate < _people[j].BirthDate)
-                    {
-                        newComparison.Person1 = _people[i];
-                        newComparison.Person2 = _people[j];
-                    }
-                    else
-                    {
-                        newComparison.Person1 = _people[j];
-                        newComparison.Person2 = _people[i];
-                    }
-                    newComparison.AgeGap = newComparison.Person2.BirthDate - newComparison.Person1.BirthDate;
-                    listOfComparisons.Add(newComparison);
+                    smallestGap = p2.BirthDate - p1.BirthDate;
+                    smallestGapPerson1 = p2;
+                    smallestGapPerson2 = p1;
                 }
             }
-
-            if(listOfComparisons.Count < 1)
+            
+            return new Comparison()
             {
-                return new Comparison();
-            }
-
-            Comparison answer = listOfComparisons[0];
-            foreach(var result in listOfComparisons)
-            {
-                switch(ft)
-                {
-                    case AgeGap.SmallestAgeGap:
-                        if(result.AgeGap < answer.AgeGap)
-                        {
-                            answer = result;
-                        }
-                        break;
-
-                    case AgeGap.LargestAgeGap:
-                        if(result.AgeGap > answer.AgeGap)
-                        {
-                            answer = result;
-                        }
-                        break;
-                }
-            }
-
-            return answer;
+                Person1 = smallestGapPerson1,
+                Person2 = smallestGapPerson2,
+                AgeGap = smallestGap
+            };
         }
     }
 }
